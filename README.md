@@ -18,6 +18,6 @@ Once connected, they can send messages over the data channel
     Connection is currently determined when the data channels open
 
 ## TODOs
-[] reconnect logic
-[] joining named rooms
-[] presence updates
+- [ ] reconnect logic
+- [ ] joining named rooms
+- [ ] presence updates
