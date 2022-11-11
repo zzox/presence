@@ -8,14 +8,14 @@ Allows for simple two-per-room matchmaking and SDP and ICE candidate signaling f
 
 ## Basic Flow
 
-Alice creates a room, is host
-Bob joins the room, is "peer"
-Alice gets alerted that a peer joined, sends an SDP offer
-    Alice also opens a data channel
-Bob gets the offer, sends an SDP answer
-(They both send ice candidates throughout)
-Once connected, they can send messages over the data channel
-    Connection is currently determined when the data channels open
+1. Alice creates a room, is host
+2. Bob joins the room, is "peer"
+3. Alice gets alerted that a peer joined, sends an SDP offer
+    1. Alice also opens a data channel
+4. Bob gets the offer, sends an SDP answer
+    1. (They both send ice candidates throughout)
+5. Once connected, they can send messages over the data channel
+6. Connection is currently determined as established when the data channels open
 
 ## TODOs
 - [ ] reconnect logic
