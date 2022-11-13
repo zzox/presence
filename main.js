@@ -1,7 +1,8 @@
 import { WebSocketServer } from 'ws'
 import { v4 as uuid } from 'uuid'
 
-const PORT = 6969
+const PORT = process.env.PORT || 6969
+const DEV = process.env.NODE_VARS === 'production'
 
 let rooms = {}
 let users = {}
@@ -45,7 +46,7 @@ const handleDisconnect = (user, code) => {
 }
 
 const handleMessage = ({ type, payload }, user) => {
-    console.log('message', type, payload)
+    DEV && console.log('message', type, payload)
     switch (type) {
         case 'create-room':
             const room = createRoom(user)
