@@ -47,11 +47,15 @@ const handleDisconnect = (user, code) => {
 
 const handleMessage = ({ type, payload }, user) => {
     DEV && console.log('message', type, payload)
+    let willCreate = false
     switch (type) {
         case 'create-room':
             const room = createRoom(user)
             sendMessage(user.ws, 'room-created', room.id)
             break
+        case 'join-or-create':
+            // fall through to joining a room and creating if room isn't found
+            willCreate = true
         case 'join-any-room':
             let joined = false
             for (let rid in rooms) {
@@ -65,7 +69,12 @@ const handleMessage = ({ type, payload }, user) => {
                 }
             }
             if (!joined) {
-                console.warn('could not join room', user.id)
+                if (willCreate) {
+                    const room = createRoom(user)
+                    sendMessage(user.ws, 'room-created', room.id)
+                } else {
+                    console.warn('could not join room', user.id)
+                }
             }
             break
         // TODO:
