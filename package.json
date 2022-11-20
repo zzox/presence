@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "private": true,
   "scripts": {
+    "postinstall": "npm run build",
     "build": "tsc src/main.ts --module nodenext --outDir dist/",
     "start": "node dist/main.js",
     "watch": "nodemon dist/main.js"
