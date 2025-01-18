@@ -1,8 +1,9 @@
 
 import { WebSocket, WebSocketServer } from 'ws'
 import { logger } from './logger.js'
-import { createRoom, rooms } from './rooms.js'
+import { createRoom, rooms, removeUserFromRooms } from './rooms.js'
 import { createUser, removeUser, User, users } from './users.js'
+import http from 'http'
 
 type MessagePayload = {
     type: string,
@@ -11,7 +12,7 @@ type MessagePayload = {
 
 const PORT = process.env.PORT || 6969
 
-const sendMessage = (ws:WebSocket, type:string, payload:any) => {
+export const sendMessage = (ws:WebSocket, type:string, payload:any) => {
     ws.send(JSON.stringify({ type, payload }))
 }
 
@@ -22,6 +23,7 @@ const handleError = (e) => {
 const handleDisconnect = (user:User, code:number) => {
     logger.log(`user ${user.id} disconnected, code: ${code}`)
     removeUser(user)
+    removeUserFromRooms(user)
 }
 
 const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
@@ -112,10 +114,49 @@ const handleConnection = (ws:WebSocket) => {
     ws.on('error', errorHandler)
     ws.on('close', closeHandler)
 
-    logger.debug('users:', Object.keys(users))
+    logger.debug('num users:', Object.keys(users).length)
 }
 
-const wss = new WebSocketServer({ port: PORT as number })
+const server = http.createServer((req, res) => {
+    const r:string[] = []
+    for (let id in rooms) {
+        r.push(id)
+    }
+
+    const u:string[] = []
+    for (let id in users) {
+        u.push(id)
+    }
+
+    res.write(JSON.stringify({ rooms: Object.keys(rooms), users: Object.keys(users) }))
+    res.statusCode = 200
+    res.end()
+}).listen(PORT)
+
+setInterval(() => {
+    for (let id in users) {
+        if (users[id].ws.readyState === WebSocket.CLOSED) {
+            removeUserFromRooms(users[id])
+            delete users[id]
+        }
+    }
+
+    for (let id in rooms) {
+        if (rooms[id].peer == null) {
+            if (rooms[id].host.ws.readyState === WebSocket.CLOSED) {
+                delete rooms[id]
+            }
+        } else {
+            if (rooms[id].host.ws.readyState === WebSocket.CLOSED && rooms[id].host.ws.readyState === WebSocket.CLOSED) {
+                delete rooms[id]
+            }
+        }
+    }
+}, 15 * 1000)
+
+logger.info(`HTTP server listening on port ${PORT}`)
+
+const wss = new WebSocketServer({ server })
 wss.on('connection', (ws) => handleConnection(ws))
 
 logger.info(`Websocket server listening on port ${PORT}`)
