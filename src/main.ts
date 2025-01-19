@@ -23,7 +23,8 @@ const handleError = (e) => {
 const handleDisconnect = (user:User, code:number) => {
     logger.log(`user ${user.id} disconnected, code: ${code}`)
     removeUser(user)
-    removeUserFromRooms(user)
+    // ^^^ this calls vvv
+    // removeUserFromRooms(user)
 }
 
 const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
@@ -58,6 +59,9 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
                         throw new Error('No rooms available.');
                     }
                 }
+                break
+            case 'leave-room':
+                removeUserFromRooms(user)
                 break
             // TODO:
             case 'join-named-room': break

@@ -1,6 +1,7 @@
 import { logger } from './logger.js'
 import { v4 as uuid } from 'uuid'
 import { WebSocket } from 'ws'
+import { removeUserFromRooms } from './rooms.js'
 
 export type User = {
     id:string,
@@ -24,5 +25,6 @@ export const createUser = (ws:WebSocket):User => {
 export const removeUser = (user:User) => {
     delete users[user.id]
     // TODO: remove user from rooms they may be in
+    removeUserFromRooms(user)
     logger.log('removed user', user.id)
 }
