@@ -124,16 +124,16 @@ const handleConnection = (ws:WebSocket) => {
 
 const server = http.createServer((req, res) => {
     const r:string[] = []
-    for (let id in rooms) {
+    rooms.forEach((_, id) => {
         r.push(id)
-    }
+    });
 
     const u:string[] = []
-    for (let id in users) {
+    users.forEach((_, id) => {
         u.push(id)
-    }
+    });
 
-    res.write(JSON.stringify({ rooms: Object.keys(rooms), users: Object.keys(users) }))
+    res.write(JSON.stringify({ rooms: r, users: u }))
     res.statusCode = 200
     res.end()
 }).listen(PORT)
