@@ -1,7 +1,7 @@
 
 import { WebSocket, WebSocketServer } from 'ws'
-import { logger } from './logger.js'
-import { createRoom, rooms, removeUserFromRooms } from './rooms.js'
+import { logger, LogLevel, setLogLevel } from './logger.js'
+import { createRoom, rooms, removeUserFromRooms, getRoom } from './rooms.js'
 import { createUser, removeUser, User, users } from './users.js'
 import http from 'http'
 
@@ -11,6 +11,8 @@ type MessagePayload = {
 }
 
 const PORT = process.env.PORT || 6969
+
+setLogLevel(LogLevel.Log)
 
 export const sendMessage = (ws:WebSocket, type:string, payload:any) => {
     ws.send(JSON.stringify({ type, payload }))
@@ -41,16 +43,15 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
                 willCreate = true
             case 'join-any-room':
                 let joined = false
-                for (let rid in rooms) {
-                    const room = rooms[rid]
-                    if (!room.peer) {
+                rooms.forEach((room) => {
+                    if (!joined && !room.peer) {
                         room.peer = user
                         joined = true
                         sendMessage(room.host.ws, 'peer-joined', user.id)
                         sendMessage(user.ws, 'joined-room', room.id)
-                        break
+                        return
                     }
-                }
+                })
                 if (!joined) {
                     if (willCreate) {
                         const room = createRoom(user)
@@ -66,7 +67,7 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
             // TODO:
             case 'join-named-room': break
             case 'sdp-offer':
-                const { peer } = rooms[payload.roomId]
+                const { peer } = getRoom(payload.roomId)
 
                 if (peer == null) {
                     throw new Error('Peer does not exist.')
@@ -75,11 +76,11 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
                 sendMessage(peer.ws, 'sdp-offer', payload.offer)
                 break
             case 'sdp-answer':
-                const { host } = rooms[payload.roomId]
+                const { host } = getRoom(payload.roomId)
                 sendMessage(host.ws, 'sdp-answer', payload.answer)
                 break
             case 'ice-candidate':
-                const toRoom = rooms[payload.roomId]
+                const toRoom = getRoom(payload.roomId)
                 const toUser = toRoom.host.id === user.id ? toRoom.peer : toRoom.host
 
                 if (toUser == null) {

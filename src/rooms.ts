@@ -9,36 +9,50 @@ export type Room = {
     peer: User | null
 }
 
-type Rooms = {
-    [key: string]: Room
+type Rooms = Map<string, Room>
+
+export const rooms:Rooms = new Map();
+
+export const getRoom = (roomId:string):Room => {
+    const room = rooms.get(roomId)
+    if (!room) {
+        throw new Error('No room exists with that id')
+    }
+
+    return room
 }
 
-export const rooms:Rooms = {}
-
 export const createRoom = (initialUser:User):Room => {
+    if (initialUser.roomId !== undefined) {
+        throw 'User already in room'
+    }
+
     const id = uuid()
     const room = { id, host: initialUser, peer: null }
-    rooms[id] = room
+    rooms.set(id, room)
     logger.log('created room', id)
+    initialUser.roomId = id
     return room
 }
 
 export const removeUserFromRooms = (user:User) => {
-    for (let roomId in rooms) {
-        if (rooms[roomId].peer === user) {
-            rooms[roomId].peer = null
+    rooms.forEach((room, roomId) => {
+        if (room.peer === user) {
+            room.peer = null
             // send a message to hosts ws?
-            rooms[roomId].host && sendMessage(rooms[roomId].host.ws, 'peer-left', user.id)
+            room.host && sendMessage(room.host.ws, 'peer-left', user.id)
             logger.log('removed from room', user.id)
-            continue
+            return
         }
 
-        if (rooms[roomId].host === user) {
-            rooms[roomId].peer && sendMessage(rooms[roomId].peer.ws, 'peer-left', user.id)
-            delete rooms[roomId]
+        if (room.host === user) {
+            room.peer && sendMessage(room.peer.ws, 'peer-left', user.id)
+            rooms.delete(roomId)
             logger.log('removed from room', user.id)
             logger.log('destroyed room', roomId)
             // send a disconnect message to peers ws?
         }
-    }
+    })
+
+    user.roomId = undefined
 }

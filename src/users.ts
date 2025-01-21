@@ -5,26 +5,24 @@ import { removeUserFromRooms } from './rooms.js'
 
 export type User = {
     id:string,
-    ws:WebSocket
+    ws:WebSocket,
+    roomId?:string
 }
 
-type Users = {
-    [key: string]: User
-}
+type Users = Map<string, User>;
 
-export const users:Users = {}
+export const users:Users = new Map();
 
 export const createUser = (ws:WebSocket):User => {
     const id = uuid()
     const user = { id, ws }
-    users[id] = user
+    users.set(id, user)
     logger.log('created user', user.id)
     return user
 }
 
 export const removeUser = (user:User) => {
-    delete users[user.id]
-    // TODO: remove user from rooms they may be in
+    users.delete(user.id)
     removeUserFromRooms(user)
     logger.log('removed user', user.id)
 }
