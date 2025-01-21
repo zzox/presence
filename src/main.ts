@@ -94,6 +94,8 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
             // in the previous objects places
             case 'reconnect':
                 break
+            case 'ping':
+                break
             default:
                 throw new Error('Unhandled message')
         }
