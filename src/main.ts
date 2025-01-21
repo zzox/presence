@@ -1,7 +1,7 @@
 
 import { WebSocket, WebSocketServer } from 'ws'
 import { logger, LogLevel, setLogLevel } from './logger.js'
-import { createRoom, rooms, removeUserFromRooms, getRoom } from './rooms.js'
+import { createRoom, rooms, removeUserFromRooms, getRoom, joinRoom, RoomState } from './rooms.js'
 import { createUser, removeUser, User, users } from './users.js'
 import http from 'http'
 
@@ -34,18 +34,19 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
     try {
         let willCreate = false
         switch (type) {
-            case 'create-room':
-                const room = createRoom(user)
-                sendMessage(user.ws, 'room-created', room.id)
-                break
+            // NOTE: disabled as we dont want users to spam rooms
+            // case 'create-room':
+            //     const room = createRoom(user)
+            //     sendMessage(user.ws, 'room-created', room.id)
+            //     break
             case 'join-or-create':
                 // fall through to joining a room and creating if room isn't found
                 willCreate = true
             case 'join-any-room':
                 let joined = false
                 rooms.forEach((room) => {
-                    if (!joined && !room.peer) {
-                        room.peer = user
+                    if (!joined && !room.peer && room.state === RoomState.Open) {
+                        joinRoom(room, user)
                         joined = true
                         sendMessage(room.host.ws, 'peer-joined', user.id)
                         sendMessage(user.ws, 'joined-room', room.id)
@@ -62,6 +63,7 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
                 }
                 break
             case 'leave-room':
+                // TODO: room-left event?
                 removeUserFromRooms(user)
                 break
             // TODO:

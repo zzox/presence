@@ -3,10 +3,17 @@ import { logger } from './logger.js'
 import { User } from './users.js'
 import { sendMessage } from './main.js'
 
+export enum RoomState {
+    Open = 'open',
+    Full = 'full',
+    // Over = 'over'
+}
+
 export type Room = {
     id: string,
     host: User,
-    peer: User | null
+    peer: User | null,
+    state: RoomState
 }
 
 type Rooms = Map<string, Room>
@@ -28,29 +35,40 @@ export const createRoom = (initialUser:User):Room => {
     }
 
     const id = uuid()
-    const room = { id, host: initialUser, peer: null }
+    const room = { id, host: initialUser, state: RoomState.Open, peer: null }
     rooms.set(id, room)
     logger.log('created room', id)
     initialUser.roomId = id
     return room
 }
 
+export const joinRoom = (room:Room, user:User) => {
+    if (room.peer !== null) {
+        throw 'Peer already in room'
+    }
+
+    if (room.state === RoomState.Full) {
+        throw 'Room is full'
+    }
+
+    room.peer = user
+    room.state = RoomState.Full
+}
+
 export const removeUserFromRooms = (user:User) => {
     rooms.forEach((room, roomId) => {
         if (room.peer === user) {
             room.peer = null
-            // send a message to hosts ws?
             room.host && sendMessage(room.host.ws, 'peer-left', user.id)
             logger.log('removed from room', user.id)
             return
         }
 
         if (room.host === user) {
-            room.peer && sendMessage(room.peer.ws, 'peer-left', user.id)
             rooms.delete(roomId)
+            room.peer && sendMessage(room.peer.ws, 'peer-left', user.id)
             logger.log('removed from room', user.id)
             logger.log('destroyed room', roomId)
-            // send a disconnect message to peers ws?
         }
     })
 
