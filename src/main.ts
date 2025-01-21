@@ -102,7 +102,10 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
     }
 }
 
+let joins = 0
+
 const handleConnection = (ws:WebSocket) => {
+    joins++
     const user = createUser(ws)
 
     const messageHandler = (data) => handleMessage(JSON.parse(data.toString()), user)
@@ -122,18 +125,35 @@ const handleConnection = (ws:WebSocket) => {
     logger.debug('num users:', Object.keys(users).length)
 }
 
+let maxUsers = 0
+const startTime = Date.now()
+let usercleanups = 0
+let roomcleanups = 0
+
 const server = http.createServer((req, res) => {
     const r:string[] = []
     rooms.forEach((_, id) => {
         r.push(id)
-    });
+    })
 
     const u:string[] = []
     users.forEach((_, id) => {
         u.push(id)
-    });
+    })
 
-    res.write(JSON.stringify({ rooms: r, users: u }))
+    if (u.length > maxUsers) {
+        maxUsers = u.length
+    }
+
+    res.write(JSON.stringify({
+        rooms: r,
+        users: u,
+        uptimeMinutes: Math.floor((Date.now() - startTime) / (60 * 1000)),
+        maxUsers,
+        joins,
+        usercleanups,
+        roomcleanups
+    }))
     res.statusCode = 200
     res.end()
 }).listen(PORT)
@@ -143,6 +163,7 @@ setInterval(() => {
         if (users[id].ws.readyState === WebSocket.CLOSED) {
             removeUserFromRooms(users[id])
             delete users[id]
+            usercleanups++
         }
     }
 
@@ -150,10 +171,12 @@ setInterval(() => {
         if (rooms[id].peer == null) {
             if (rooms[id].host.ws.readyState === WebSocket.CLOSED) {
                 delete rooms[id]
+                roomcleanups++
             }
         } else {
             if (rooms[id].host.ws.readyState === WebSocket.CLOSED && rooms[id].host.ws.readyState === WebSocket.CLOSED) {
                 delete rooms[id]
+                roomcleanups++
             }
         }
     }
