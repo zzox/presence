@@ -149,6 +149,10 @@ const server = http.createServer((req, res) => {
         maxUsers = u.length
     }
 
+    res.setHeader('Access-Control-Allow-Origin', '*')
+    res.setHeader('Access-Control-Allow-Methods', 'GET')
+    res.setHeader('Content-Type', 'application/json')
+
     res.write(JSON.stringify({
         rooms: r,
         users: u,
