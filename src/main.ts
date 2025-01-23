@@ -29,6 +29,9 @@ const handleDisconnect = (user:User, code:number) => {
     // removeUserFromRooms(user)
 }
 
+let sameTimes = 0
+let diffTimes = 0
+
 const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
     logger.debug('message', type, payload)
     try {
@@ -91,6 +94,19 @@ const handleMessage = ({ type, payload }:MessagePayload, user:User) => {
 
                 sendMessage(toUser.ws, 'ice-candidate', payload.candidate)
                 break
+            // TODO: store this with
+            case 'room-times':
+                const room = getRoom(payload.roomId)
+                if (!room.times) {
+                    room.times = payload.times
+                } else {
+                    if (room.times[0] === payload.times[0] && room.times[0] === payload.times[0]) {
+                        sameTimes++
+                    } else {
+                        diffTimes++
+                    }
+                    room.times = undefined
+                }
             // TODO: requires an old user id and a new user id
             // we remove the new user and put this user object
             // in the previous objects places
@@ -160,7 +176,9 @@ const server = http.createServer((req, res) => {
         maxUsers,
         joins,
         usercleanups,
-        roomcleanups
+        roomcleanups,
+        sameTimes,
+        diffTimes
     }))
     res.statusCode = 200
     res.end()

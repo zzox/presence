@@ -14,6 +14,7 @@ export type Room = {
     host: User,
     peer: User | null,
     state: RoomState
+    times?: number[]
 }
 
 type Rooms = Map<string, Room>
